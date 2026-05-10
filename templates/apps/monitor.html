@@ -3,27 +3,82 @@
 <style>
 .mon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 .mon-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 20px; }
-.mon-big { font-size: 36px; text-align: center; margin: 12px 0; }
+.mon-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.mon-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.mon-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; margin-top: 4px; }
+.mon-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+.mon-big { font-size: 36px; font-weight: 300; text-align: center; margin: 12px 0; }
+.mon-sub { font-size: 12px; color: var(--text-secondary); text-align: center; }
+.mon-chart { display: flex; align-items: flex-end; gap: 3px; height: 60px; margin-top: 10px; }
+.mon-chart-bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--accent); transition: height 0.3s; min-width: 10px; }
+.proc-table { width: 100%; font-size: 11px; }
+.proc-table th { text-align: left; padding: 4px 6px; color: var(--text-secondary); font-weight: 500; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.proc-table td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.mon-wide { grid-column: span 2; }
+@media(max-width:768px){ .mon-wide { grid-column: span 1; } }
 </style>
 {% endblock %}
 {% block content %}
 <div class="mon-grid" id="monGrid">
-    <div class="mon-card">
-        <h3>📈 System Performance</h3>
-        <div class="mon-big">Monitoring Active</div>
+    <div class="mon-card" style="text-align:center;padding:40px;">
+        <div style="font-size:48px;">📈</div>
+        <h3 style="justify-content:center;margin-top:12px;">Loading System Data...</h3>
     </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
 (function(){
+    function fmtBytes(b){ if(b<1024)return b+'B'; if(b<1048576)return(b/1024).toFixed(1)+'KB'; if(b<1073741824)return(b/1048576).toFixed(1)+'MB'; return(b/1073741824).toFixed(2)+'GB'; }
+    function barColor(pct){ return pct>85?'#ef4444':pct>60?'#f59e0b':'#22c55e'; }
+
     function update(){
         fetch('/app/monitor/api/history').then(r=>r.json()).then(d=>{
-            console.log(d);
-        });
+            if(d.error){ document.getElementById('monGrid').innerHTML=`<div class="mon-card"><h3>⚠️ ${d.error}</h3><p>Run setup.sh to install psutil</p></div>`; return; }
+            const cpuAvg = d.cpu_history.reduce((a,b)=>a+b,0)/d.cpu_history.length;
+            const maxBar = Math.max(...d.cpu_history, 10);
+            document.getElementById('monGrid').innerHTML = `
+            <div class="mon-card">
+                <h3>🔲 CPU</h3>
+                <div class="mon-big" style="color:${barColor(cpuAvg)}">${cpuAvg.toFixed(1)}%</div>
+                <div class="mon-sub">${d.cpu_count} cores · ${d.cpu_freq?d.cpu_freq.toFixed(0)+' MHz':''}</div>
+                <div class="mon-chart">${d.cpu_history.map(v=>`<div class="mon-chart-bar" style="height:${(v/maxBar)*100}%;background:${barColor(v)}"></div>`).join('')}</div>
+            </div>
+            <div class="mon-card">
+                <h3>💾 RAM</h3>
+                <div class="mon-big" style="color:${barColor(d.ram_percent)}">${d.ram_percent}%</div>
+                <div class="mon-sub">${fmtBytes(d.ram_used)} / ${fmtBytes(d.ram_total)}</div>
+                <div class="mon-bar"><div class="mon-fill" style="width:${d.ram_percent}%;background:${barColor(d.ram_percent)}"></div></div>
+                <div class="mon-row" style="margin-top:10px"><span>Available</span><span>${fmtBytes(d.ram_available)}</span></div>
+                <div class="mon-row"><span>Swap</span><span>${fmtBytes(d.swap_used)} / ${fmtBytes(d.swap_total)} (${d.swap_percent}%)</span></div>
+            </div>
+            <div class="mon-card">
+                <h3>📏 Disk</h3>
+                <div class="mon-big" style="color:${barColor(d.disk_percent)}">${d.disk_percent}%</div>
+                <div class="mon-sub">${fmtBytes(d.disk_used)} / ${fmtBytes(d.disk_total)}</div>
+                <div class="mon-bar"><div class="mon-fill" style="width:${d.disk_percent}%;background:${barColor(d.disk_percent)}"></div></div>
+                <div class="mon-row" style="margin-top:10px"><span>Read</span><span>${fmtBytes(d.disk_read)}</span></div>
+                <div class="mon-row"><span>Written</span><span>${fmtBytes(d.disk_write)}</span></div>
+            </div>
+            <div class="mon-card">
+                <h3>🌡 Temperature & Network</h3>
+                ${Object.keys(d.temperatures).length ? Object.entries(d.temperatures).map(([k,v])=>`<div class="mon-row"><span>${k}</span><span style="color:${v>70?'#ef4444':v>50?'#f59e0b':'#22c55e'}">${v}°C</span></div>`).join('') : '<div class="mon-row"><span>No sensors detected</span><span>—</span></div>'}
+                <div style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.08);padding-top:10px;">
+                    <div class="mon-row"><span>📤 Sent</span><span>${fmtBytes(d.net_sent)}</span></div>
+                    <div class="mon-row"><span>📥 Recv</span><span>${fmtBytes(d.net_recv)}</span></div>
+                </div>
+            </div>
+            <div class="mon-card mon-wide">
+                <h3>⚙️ Top Processes</h3>
+                <table class="proc-table">
+                    <tr><th>PID</th><th>Name</th><th>CPU %</th><th>RAM %</th></tr>
+                    ${d.processes.map(p=>`<tr><td>${p.pid}</td><td>${(p.name||'').substring(0,30)}</td><td>${(p.cpu_percent||0).toFixed(1)}</td><td>${(p.memory_percent||0).toFixed(1)}</td></tr>`).join('')}
+                </table>
+            </div>`;
+        }).catch(()=>{});
     }
     update();
-    setInterval(update, 5000);
+    setInterval(update, 3000);
 })();
 </script>
 {% endblock %}

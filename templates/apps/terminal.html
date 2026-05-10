@@ -1,0 +1,83 @@
+{% extends "app_base.html" %}
+{% block head %}
+<style>
+.term-wrap { height: calc(100vh - 130px); display: flex; flex-direction: column; }
+.term-screen { flex: 1; background: #0a0a0a; border: 1px solid rgba(0,255,0,0.2); border-radius: 14px 14px 0 0; padding: 16px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px; color: #00ff00; }
+.term-line { margin-bottom: 2px; white-space: pre-wrap; word-break: break-all; }
+.term-line.cmd { color: #00ff00; }
+.term-line.out { color: #c0c0c0; }
+.term-line.err { color: #ff4444; }
+.term-line.sys { color: #888; font-style: italic; }
+.term-input-row { display: flex; align-items: center; background: #111; border: 1px solid rgba(0,255,0,0.2); border-top: none; border-radius: 0 0 14px 14px; padding: 8px 12px; gap: 8px; }
+.term-prompt { color: #00ff00; font-family: 'Courier New', monospace; font-size: 13px; white-space: nowrap; }
+.term-input { flex: 1; background: transparent; border: none; outline: none; color: #00ff00; font-family: 'Courier New', monospace; font-size: 13px; caret-color: #00ff00; }
+.term-input::placeholder { color: rgba(0,255,0,0.3); }
+.term-run { padding: 5px 14px; border-radius: 7px; border: 1px solid rgba(0,255,0,0.3); background: rgba(0,255,0,0.08); color: #00ff00; font-size: 12px; cursor: pointer; font-family: 'Courier New', monospace; }
+.term-run:hover { background: rgba(0,255,0,0.15); }
+.term-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.term-top h2 { font-size: 13px; font-weight: 700; }
+.term-top .term-clear { padding: 5px 12px; border-radius: 7px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-secondary); font-size: 11px; cursor: pointer; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="term-top">
+  <h2>📟 Terminal</h2>
+  <button class="term-clear" onclick="clearTerm()">🧹 Clear</button>
+</div>
+<div class="term-wrap">
+  <div class="term-screen" id="termScreen">
+    <div class="term-line sys">ServerOS Terminal — type commands below ⬇</div>
+    <div class="term-line sys">──────────────────────────────────────────</div>
+  </div>
+  <div class="term-input-row">
+    <span class="term-prompt">$ </span>
+    <input class="term-input" id="termInput" placeholder="Enter command..." onkeydown="handleKey(event)" autofocus>
+    <button class="term-run" onclick="runCmd()">Run</button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  let history=[], histIdx=-1;
+  const screen=document.getElementById('termScreen');
+  const input=document.getElementById('termInput');
+
+  function appendLine(text, type){
+    const el=document.createElement('div');
+    el.className='term-line '+type;
+    el.textContent=text;
+    screen.appendChild(el);
+    screen.scrollTop=screen.scrollHeight;
+  }
+
+  function appendLines(text, type){
+    (text||'').split('\n').filter(l=>l!==undefined).forEach(l=>appendLine(l,type));
+  }
+
+  window.runCmd=function(){
+    const cmd=input.value.trim();
+    if(!cmd) return;
+    history.unshift(cmd); histIdx=-1;
+    input.value='';
+    appendLine('$ '+cmd,'cmd');
+    fetch('/app/terminal/api/exec',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})})
+      .then(r=>r.json()).then(d=>{
+        if(d.output) appendLines(d.output,'out');
+        if(d.error) appendLines(d.error,'err');
+        if(!d.output&&!d.error) appendLine('(no output)','sys');
+      }).catch(e=>appendLine('Error: '+e.message,'err'));
+  };
+
+  window.handleKey=function(e){
+    if(e.key==='Enter'){ runCmd(); return; }
+    if(e.key==='ArrowUp'){ e.preventDefault(); if(histIdx<history.length-1){ histIdx++; input.value=history[histIdx]; } return; }
+    if(e.key==='ArrowDown'){ e.preventDefault(); if(histIdx>0){ histIdx--; input.value=history[histIdx]; } else { histIdx=-1; input.value=''; } }
+  };
+
+  window.clearTerm=function(){
+    screen.innerHTML='<div class="term-line sys">Terminal cleared.</div>';
+  };
+})();
+</script>
+{% endblock %}

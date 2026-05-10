@@ -84,7 +84,7 @@ sleep 2
 if systemctl is-active --quiet serveros.service; then
     ok "serveros.service is RUNNING."
 else
-    warn "Service didn't start. Check:  sudo journalctl -u severos -n 50"
+    warn "Service didn't start. Check:  sudo journalctl -u serveros -n 50"
 fi
 
 IP_ADDR=$(hostname -I | awk '{print $1}')
@@ -94,4 +94,4 @@ echo "   Local Wi-Fi  : http://$IP_ADDR:5000"
 echo "   mDNS         : http://serveros.local:5000"
 echo "   Hotspot      : sudo nmcli device wifi hotspot ssid ServerOS password SeRVEROS"
 echo "   Remote (VPN) : sudo tailscale up"
-echo "   Manage       : sudo systemctl status|restart severos"
+echo "   Manage       : sudo systemctl status|restart serveros"

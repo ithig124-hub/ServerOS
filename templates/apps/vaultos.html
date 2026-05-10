@@ -43,7 +43,7 @@
 {% block content %}
 <div id="lockScreen" class="vault-wrap">
   <div class="vault-card">
-    <div class="vault-title" id="lockTitle">🔒 VaultOS</div>
+    <div class="vault-title" id="lockTitle">🔐 VaultOS</div>
     <div class="vault-sub" id="lockSub">Enter your 6-digit passcode</div>
     <div class="pin-display" id="pinDisplay">
       <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
@@ -70,7 +70,7 @@
 
 <div id="vaultContent" class="vault-unlocked" style="display:none">
   <div class="vault-header">
-    <h2>🔒 VaultOS — Secure Entries</h2>
+    <h2>🔐 VaultOS — Secure Entries</h2>
     <div class="vault-actions">
       <button class="btn-sm danger" onclick="lockVault()">🔒 Lock</button>
     </div>
@@ -96,7 +96,7 @@
       if(d.unlocked){ showVault(); return; }
       if(!d.has_passcode){
         isSetup=true;
-        document.getElementById('lockTitle').textContent='🔒 Create Passcode';
+        document.getElementById('lockTitle').textContent='🔐 Create Passcode';
         document.getElementById('lockSub').textContent='Set your 6-digit passcode to secure your vault';
       }
     });

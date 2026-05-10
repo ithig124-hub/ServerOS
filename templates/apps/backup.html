@@ -1,1 +1,134 @@
-$(cat SeverOS_Repo/templates/apps/backup.html)
+{% extends "app_base.html" %}
+{% block head %}
+<style>
+.bk-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: calc(100vh - 130px); }
+.bk-col { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.bk-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 20px; }
+.bk-card h2 { font-size: 14px; font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+.bk-card h2 button { padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.3); background: rgba(239,68,68,0.08); color: #ef4444; font-size: 11px; cursor: pointer; }
+.bk-form label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; margin-top: 10px; }
+.bk-form input { width: 100%; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none; box-sizing: border-box; }
+.bk-form input:focus { border-color: var(--accent); }
+.bk-form button.add-btn { margin-top: 12px; width: 100%; padding: 10px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+.job-item { background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.job-name { font-size: 13px; font-weight: 600; }
+.job-paths { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+.job-last { font-size: 11px; margin-top: 4px; }
+.job-last.success { color: #10b981; }
+.job-last.error { color: #ef4444; }
+.job-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.job-btns button { padding: 5px 10px; border-radius: 7px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 11px; cursor: pointer; transition: 0.15s; }
+.job-btns button:hover { background: rgba(255,255,255,0.12); }
+.job-btns button.run { background: rgba(16,185,129,0.12); border-color: rgba(16,185,129,0.3); color: #10b981; }
+.job-btns button.run:hover { background: rgba(16,185,129,0.2); }
+.log-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; display: flex; gap: 10px; align-items: flex-start; }
+.log-item:last-child { border-bottom: none; }
+.log-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+.log-dot.success { background: #10b981; }
+.log-dot.error { background: #ef4444; }
+.log-msg { color: var(--text-secondary); }
+.log-time { font-size: 10px; color: rgba(255,255,255,0.3); }
+.empty-state { text-align: center; color: var(--text-secondary); padding: 30px; font-size: 13px; }
+@media(max-width:900px){ .bk-layout { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="bk-layout">
+  <div class="bk-col">
+    <div class="bk-card">
+      <h2>🗃️ Backup Jobs</h2>
+      <div id="jobsList"></div>
+    </div>
+    <div class="bk-card">
+      <h2>➕ New Job</h2>
+      <div class="bk-form">
+        <label>Job Name</label>
+        <input type="text" id="jobName" placeholder="e.g. Daily Data Backup">
+        <label>Source Path</label>
+        <input type="text" id="jobSrc" placeholder="/home/pi/data">
+        <label>Destination Path</label>
+        <input type="text" id="jobDst" placeholder="/mnt/usb/backups">
+        <button class="add-btn" onclick="addJob()">+ Add Job</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bk-col">
+    <div class="bk-card" style="flex:1">
+      <h2>📋 Activity Log <button onclick="clearLog()">Clear</button></h2>
+      <div id="logList"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  function loadJobs(){
+    fetch('/app/backup/api/jobs').then(r=>r.json()).then(jobs=>{
+      const el=document.getElementById('jobsList');
+      if(!jobs.length){ el.innerHTML='<div class="empty-state">No backup jobs yet.</div>'; return; }
+      el.innerHTML=jobs.map(j=>`
+        <div class="job-item">
+          <div style="flex:1">
+            <div class="job-name">${j.name}</div>
+            <div class="job-paths">📂 ${j.source}<br>💾 ${j.destination}</div>
+            ${j.last_run?`<div class="job-last ${j.last_status||''}">${j.last_status==='success'?'✅':'❌'} Last run: ${j.last_run}</div>`:''}
+          </div>
+          <div class="job-btns">
+            <button class="run" onclick="runJob('${j.id}')">▶ Run</button>
+            <button onclick="delJob('${j.id}')">🗑</button>
+          </div>
+        </div>`).join('');
+    });
+  }
+
+  function loadLog(){
+    fetch('/app/backup/api/log').then(r=>r.json()).then(logs=>{
+      const el=document.getElementById('logList');
+      if(!logs.length){ el.innerHTML='<div class="empty-state">No activity yet.</div>'; return; }
+      el.innerHTML=logs.slice(0,30).map(l=>`
+        <div class="log-item">
+          <div class="log-dot ${l.status}"></div>
+          <div style="flex:1">
+            <div>${l.job_name} — ${l.status==='success'?'✅ Success':'❌ Error'}</div>
+            <div class="log-msg">${l.message}</div>
+            <div class="log-time">${l.time}</div>
+          </div>
+        </div>`).join('');
+    });
+  }
+
+  window.addJob=function(){
+    const name=document.getElementById('jobName').value.trim();
+    const src=document.getElementById('jobSrc').value.trim();
+    const dst=document.getElementById('jobDst').value.trim();
+    if(!name||!src||!dst) return;
+    const job={id:Date.now().toString(), name, source:src, destination:dst};
+    fetch('/app/backup/api/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(job)})
+      .then(()=>{
+        document.getElementById('jobName').value='';
+        document.getElementById('jobSrc').value='';
+        document.getElementById('jobDst').value='';
+        loadJobs();
+      });
+  };
+
+  window.delJob=function(id){
+    fetch('/app/backup/api/jobs/'+id,{method:'DELETE'}).then(()=>loadJobs());
+  };
+
+  window.runJob=function(id){
+    fetch('/app/backup/api/run/'+id,{method:'POST'}).then(r=>r.json()).then(result=>{
+      loadJobs(); loadLog();
+    });
+  };
+
+  window.clearLog=function(){
+    fetch('/app/backup/api/log',{method:'DELETE'}).then(()=>loadLog());
+  };
+
+  loadJobs(); loadLog();
+})();
+</script>
+{% endblock %}

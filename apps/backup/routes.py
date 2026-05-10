@@ -72,6 +72,7 @@ def register(app, app_id):
                 shutil.copy2(src, dest_path)
             entry['status'] = 'success'
             entry['message'] = f"Backed up to {dest_path}"
+            # Update last_run on job
             for j in jobs:
                 if j.get('id') == job_id:
                     j['last_run'] = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -94,5 +95,10 @@ def register(app, app_id):
     @bp.route('/api/log', methods=['GET'])
     def get_log():
         return jsonify(_load(BACKUP_LOG_FILE, []))
+
+    @bp.route('/api/log', methods=['DELETE'])
+    def clear_log():
+        _save(BACKUP_LOG_FILE, [])
+        return jsonify({'status': 'ok'})
 
     app.register_blueprint(bp, url_prefix=f'/app/{app_id}')

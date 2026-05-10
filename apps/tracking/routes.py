@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify
 def register(app, app_id):
     DATA_FILE = os.path.join('data', 'location.json')
 
-    @app.route('/api/tracking/update', methods=['POST'])
+    @bp.route('/api/tracking/update', methods=['POST'])
     def update_location():
         data = request.json
         os.makedirs('data', exist_ok=True)
@@ -12,7 +12,7 @@ def register(app, app_id):
             json.dump(data, f)
         return jsonify({"status": "success"})
 
-    @app.route('/api/tracking/status', methods=['GET'])
+    @bp.route('/api/tracking/status', methods=['GET'])
     def get_location():
         if not os.path.exists(DATA_FILE):
             return jsonify({"error": "No data recorded"})

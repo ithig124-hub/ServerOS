@@ -1,1 +1,195 @@
-$(cat SeverOS_Repo/templates/apps/vaultos.html)
+{% extends "app_base.html" %}
+{% block head %}
+<style>
+.vault-wrap { max-width: 480px; margin: 0 auto; padding-top: 30px; }
+.vault-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 36px; text-align: center; }
+.vault-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.vault-sub { color: var(--text-secondary); font-size: 13px; margin-bottom: 32px; }
+.pin-display { display: flex; gap: 10px; justify-content: center; margin-bottom: 28px; }
+.pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: transparent; transition: 0.2s; }
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 240px; margin: 0 auto; }
+.pin-btn { padding: 18px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 20px; font-weight: 600; cursor: pointer; transition: 0.15s; }
+.pin-btn:hover { background: rgba(255,255,255,0.12); }
+.pin-btn:active { transform: scale(0.94); }
+.pin-btn.del { font-size: 18px; }
+.vault-err { color: #ef4444; font-size: 13px; margin-top: 14px; min-height: 20px; }
+.vault-msg { color: #10b981; font-size: 13px; margin-top: 14px; min-height: 20px; }
+/* Vault unlocked view */
+.vault-unlocked { padding: 0; }
+.vault-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.vault-header h2 { font-size: 16px; font-weight: 700; }
+.vault-actions { display: flex; gap: 8px; }
+.btn-sm { padding: 7px 14px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.07); color: #fff; font-size: 12px; cursor: pointer; transition: 0.2s; }
+.btn-sm:hover { background: rgba(255,255,255,0.12); }
+.btn-sm.danger { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+.entries-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; max-height: calc(100vh - 260px); overflow-y: auto; }
+.entry-card { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+.entry-info { flex: 1; }
+.entry-title { font-size: 14px; font-weight: 600; }
+.entry-user { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.entry-pass { font-size: 12px; color: var(--text-secondary); letter-spacing: 2px; }
+.entry-btns { display: flex; gap: 6px; }
+.entry-btns button { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 11px; cursor: pointer; }
+.add-form { background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; }
+.add-form input { width: 100%; padding: 9px 12px; margin-bottom: 10px; border-radius: 9px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none; box-sizing: border-box; }
+.add-form input:focus { border-color: var(--accent); }
+.add-form .row { display: flex; gap: 8px; }
+.add-form .row input { flex: 1; margin-bottom: 0; }
+.add-form .row button { padding: 9px 18px; border-radius: 9px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.empty-state { text-align: center; color: var(--text-secondary); padding: 40px; font-size: 14px; }
+</style>
+{% endblock %}
+{% block content %}
+<div id="lockScreen" class="vault-wrap">
+  <div class="vault-card">
+    <div class="vault-title" id="lockTitle">🔒 VaultOS</div>
+    <div class="vault-sub" id="lockSub">Enter your 6-digit passcode</div>
+    <div class="pin-display" id="pinDisplay">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      <div class="pin-dot" id="d4"></div><div class="pin-dot" id="d5"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-btn" onclick="pressKey('1')">1</button>
+      <button class="pin-btn" onclick="pressKey('2')">2</button>
+      <button class="pin-btn" onclick="pressKey('3')">3</button>
+      <button class="pin-btn" onclick="pressKey('4')">4</button>
+      <button class="pin-btn" onclick="pressKey('5')">5</button>
+      <button class="pin-btn" onclick="pressKey('6')">6</button>
+      <button class="pin-btn" onclick="pressKey('7')">7</button>
+      <button class="pin-btn" onclick="pressKey('8')">8</button>
+      <button class="pin-btn" onclick="pressKey('9')">9</button>
+      <button class="pin-btn" style="opacity:0.2" disabled></button>
+      <button class="pin-btn" onclick="pressKey('0')">0</button>
+      <button class="pin-btn del" onclick="delKey()">⌫</button>
+    </div>
+    <div class="vault-err" id="lockErr"></div>
+  </div>
+</div>
+
+<div id="vaultContent" class="vault-unlocked" style="display:none">
+  <div class="vault-header">
+    <h2>🔒 VaultOS — Secure Entries</h2>
+    <div class="vault-actions">
+      <button class="btn-sm danger" onclick="lockVault()">🔒 Lock</button>
+    </div>
+  </div>
+  <div class="entries-list" id="entriesList"></div>
+  <div class="add-form">
+    <input type="text" id="newTitle" placeholder="Service / Website" />
+    <input type="text" id="newUser" placeholder="Username / Email" />
+    <div class="row">
+      <input type="text" id="newPass" placeholder="Password" />
+      <button onclick="addEntry()">+ Add</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  let pin='', isSetup=false;
+
+  function init(){
+    fetch('/app/vaultos/api/status').then(r=>r.json()).then(d=>{
+      if(d.unlocked){ showVault(); return; }
+      if(!d.has_passcode){
+        isSetup=true;
+        document.getElementById('lockTitle').textContent='🔒 Create Passcode';
+        document.getElementById('lockSub').textContent='Set your 6-digit passcode to secure your vault';
+      }
+    });
+  }
+
+  window.pressKey=function(k){
+    if(pin.length>=6) return;
+    pin+=k;
+    updateDots();
+    if(pin.length===6){ setTimeout(()=>submit(),200); }
+  };
+  window.delKey=function(){
+    pin=pin.slice(0,-1); updateDots();
+    document.getElementById('lockErr').textContent='';
+  };
+
+  function updateDots(){
+    for(let i=0;i<6;i++){
+      document.getElementById('d'+i).classList.toggle('filled', i<pin.length);
+    }
+  }
+
+  function submit(){
+    const url = isSetup ? '/app/vaultos/api/setup' : '/app/vaultos/api/unlock';
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passcode:pin})})
+      .then(r=>r.json()).then(d=>{
+        if(d.error){ document.getElementById('lockErr').textContent=d.error; pin=''; updateDots(); }
+        else { showVault(); }
+      });
+  }
+
+  function showVault(){
+    document.getElementById('lockScreen').style.display='none';
+    document.getElementById('vaultContent').style.display='block';
+    loadEntries();
+  }
+
+  window.lockVault=function(){
+    fetch('/app/vaultos/api/lock',{method:'POST'}).then(()=>{
+      document.getElementById('lockScreen').style.display='block';
+      document.getElementById('vaultContent').style.display='none';
+      pin=''; updateDots();
+      document.getElementById('lockErr').textContent='';
+    });
+  };
+
+  function loadEntries(){
+    fetch('/app/vaultos/api/entries').then(r=>r.json()).then(entries=>{
+      const list=document.getElementById('entriesList');
+      if(!entries||entries.error){ list.innerHTML='<div class="empty-state">🔓 No entries yet.</div>'; return; }
+      if(entries.length===0){ list.innerHTML='<div class="empty-state">No entries yet. Add one below.</div>'; return; }
+      list.innerHTML=entries.map(e=>`
+        <div class="entry-card">
+          <div class="entry-info">
+            <div class="entry-title">${e.title||''}</div>
+            <div class="entry-user">${e.username||''}</div>
+            <div class="entry-pass" id="pw_${e.id}" style="display:none">${e.password||''}</div>
+          </div>
+          <div class="entry-btns">
+            <button onclick="togglePw('${e.id}')">👁</button>
+            <button onclick="copyPw('${e.password||''}')">📋</button>
+            <button onclick="delEntry('${e.id}')">🗑</button>
+          </div>
+        </div>`).join('');
+    });
+  }
+
+  window.togglePw=function(id){
+    const el=document.getElementById('pw_'+id);
+    el.style.display=el.style.display==='none'?'block':'none';
+  };
+  window.copyPw=function(pw){
+    navigator.clipboard.writeText(pw).catch(()=>{});
+  };
+  window.delEntry=function(id){
+    fetch('/app/vaultos/api/entries/'+id,{method:'DELETE'}).then(()=>loadEntries());
+  };
+  window.addEntry=function(){
+    const t=document.getElementById('newTitle').value.trim();
+    const u=document.getElementById('newUser').value.trim();
+    const p=document.getElementById('newPass').value.trim();
+    if(!t||!p) return;
+    const entry={id: Date.now().toString(), title:t, username:u, password:p};
+    fetch('/app/vaultos/api/entries',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)})
+      .then(()=>{
+        document.getElementById('newTitle').value='';
+        document.getElementById('newUser').value='';
+        document.getElementById('newPass').value='';
+        loadEntries();
+      });
+  };
+
+  init();
+})();
+</script>
+{% endblock %}

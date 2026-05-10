@@ -1,1 +1,214 @@
-$(cat SeverOS_Repo/templates/apps/chem_suite.html)
+{% extends "app_base.html" %}
+{% block head %}
+<style>
+.chem-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+.chem-tab { padding: 9px 20px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 500; transition: 0.2s; }
+.chem-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chem-panel { display: none; }
+.chem-panel.active { display: block; }
+/* Ions DB */
+.ions-search { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none; margin-bottom: 16px; box-sizing: border-box; }
+.ions-search:focus { border-color: var(--accent); }
+.ions-section-title { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; margin-top: 4px; }
+.ions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 20px; }
+.ion-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 14px; }
+.ion-card.cation { border-left: 3px solid #6366f1; }
+.ion-card.anion { border-left: 3px solid #10b981; }
+.ion-formula { font-size: 18px; font-weight: 700; }
+.ion-name { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.ion-charge { font-size: 11px; margin-top: 4px; padding: 2px 8px; border-radius: 6px; display: inline-block; }
+.ion-card.cation .ion-charge { background: rgba(99,102,241,0.15); color: #818cf8; }
+.ion-card.anion .ion-charge { background: rgba(16,185,129,0.15); color: #34d399; }
+/* Quiz */
+.quiz-card { max-width: 520px; margin: 0 auto; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 32px; text-align: center; }
+.quiz-q { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.quiz-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 28px; }
+.quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.quiz-opt { padding: 14px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; cursor: pointer; transition: 0.2s; }
+.quiz-opt:hover { background: rgba(255,255,255,0.12); }
+.quiz-opt.correct { background: rgba(16,185,129,0.2); border-color: #10b981; color: #34d399; }
+.quiz-opt.wrong { background: rgba(239,68,68,0.2); border-color: #ef4444; color: #f87171; }
+.quiz-feedback { font-size: 15px; font-weight: 600; min-height: 24px; margin-bottom: 16px; }
+.quiz-feedback.ok { color: #10b981; }
+.quiz-feedback.bad { color: #ef4444; }
+.quiz-score { font-size: 13px; color: var(--text-secondary); }
+.quiz-next-btn { padding: 10px 28px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; }
+/* Logbook */
+.logbook-layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; height: calc(100vh - 190px); }
+.logbook-list { overflow-y: auto; }
+.log-item { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.log-item-title { font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.log-item-title button { padding: 3px 8px; border-radius: 6px; border: none; background: rgba(239,68,68,0.15); color: #ef4444; cursor: pointer; font-size: 11px; }
+.log-item-body { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; white-space: pre-wrap; }
+.log-form { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 18px; }
+.log-form label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; margin-top: 12px; }
+.log-form input, .log-form textarea { width: 100%; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none; box-sizing: border-box; font-family: var(--font); }
+.log-form input:focus, .log-form textarea:focus { border-color: var(--accent); }
+.log-form textarea { resize: vertical; min-height: 80px; }
+.log-form button { margin-top: 14px; width: 100%; padding: 10px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+@media(max-width:900px){ .logbook-layout { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="chem-tabs">
+  <button class="chem-tab active" onclick="switchTab('ions')">🧪 Ions DB</button>
+  <button class="chem-tab" onclick="switchTab('quiz')">📝 Quiz</button>
+  <button class="chem-tab" onclick="switchTab('logbook')">📓 Lab Logbook</button>
+</div>
+
+<!-- Ions DB -->
+<div class="chem-panel active" id="tab-ions">
+  <input class="ions-search" id="ionsSearch" placeholder="Search ions by name or formula..." oninput="filterIons()">
+  <div class="ions-section-title">Cations (Positive)</div>
+  <div class="ions-grid" id="cationsGrid"></div>
+  <div class="ions-section-title">Anions (Negative)</div>
+  <div class="ions-grid" id="anionsGrid"></div>
+</div>
+
+<!-- Quiz -->
+<div class="chem-panel" id="tab-quiz">
+  <div class="quiz-card">
+    <div class="quiz-q" id="quizQ">Loading...</div>
+    <div class="quiz-hint" id="quizHint"></div>
+    <div class="quiz-options" id="quizOpts"></div>
+    <div class="quiz-feedback" id="quizFb"></div>
+    <div style="display:flex;gap:10px;justify-content:center;align-items:center">
+      <button class="quiz-next-btn" id="nextBtn" onclick="nextQuestion()" style="display:none">Next →</button>
+      <div class="quiz-score" id="quizScore">Score: 0 / 0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Logbook -->
+<div class="chem-panel" id="tab-logbook">
+  <div class="logbook-layout">
+    <div class="logbook-list" id="logbookList"></div>
+    <div class="log-form">
+      <h3 style="font-size:14px;font-weight:700;margin:0 0 4px">New Entry</h3>
+      <label>Experiment Title</label>
+      <input type="text" id="logTitle" placeholder="e.g. Titration of HCl with NaOH">
+      <label>Observations / Notes</label>
+      <textarea id="logBody" placeholder="Record your observations, results, calculations..."></textarea>
+      <button onclick="saveLog()">+ Save Entry</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function(){
+  let allIons={cations:[],anions:[]}, quizScore=0, quizTotal=0, allIonsFlat=[];
+
+  // Tabs
+  window.switchTab=function(tab){
+    document.querySelectorAll('.chem-tab').forEach((t,i)=>t.classList.toggle('active',['ions','quiz','logbook'][i]===tab));
+    document.querySelectorAll('.chem-panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('tab-'+tab).classList.add('active');
+    if(tab==='logbook') loadLogbook();
+    if(tab==='quiz' && quizTotal===0) nextQuestion();
+  };
+
+  // Ions DB
+  function renderIons(cations, anions){
+    document.getElementById('cationsGrid').innerHTML=cations.map(c=>`
+      <div class="ion-card cation">
+        <div class="ion-formula">${c.formula}</div>
+        <div class="ion-name">${c.name}</div>
+        <span class="ion-charge">${c.charge}</span>
+      </div>`).join('');
+    document.getElementById('anionsGrid').innerHTML=anions.map(a=>`
+      <div class="ion-card anion">
+        <div class="ion-formula">${a.formula}</div>
+        <div class="ion-name">${a.name}</div>
+        <span class="ion-charge">${a.charge}</span>
+      </div>`).join('');
+  }
+
+  window.filterIons=function(){
+    const q=document.getElementById('ionsSearch').value.toLowerCase();
+    const fc=allIons.cations.filter(i=>i.name.toLowerCase().includes(q)||i.formula.toLowerCase().includes(q));
+    const fa=allIons.anions.filter(i=>i.name.toLowerCase().includes(q)||i.formula.toLowerCase().includes(q));
+    renderIons(fc, fa);
+  };
+
+  fetch('/app/chem_suite/api/ions').then(r=>r.json()).then(d=>{
+    allIons=d;
+    allIonsFlat=[...d.cations.map(i=>({...i,type:'cation'})),...d.anions.map(i=>({...i,type:'anion'}))];
+    renderIons(d.cations, d.anions);
+  });
+
+  // Quiz
+  let currentQ=null;
+  window.nextQuestion=function(){
+    document.getElementById('quizFb').textContent='';
+    document.getElementById('quizFb').className='quiz-feedback';
+    document.getElementById('nextBtn').style.display='none';
+    if(allIonsFlat.length<4){ setTimeout(nextQuestion,500); return; }
+    const idx=Math.floor(Math.random()*allIonsFlat.length);
+    currentQ=allIonsFlat[idx];
+    const mode=Math.random()>0.5?'name':'formula';
+    let qText, hintText;
+    if(mode==='name'){ qText=currentQ.name; hintText='What is the formula?'; }
+    else { qText=currentQ.formula; hintText='What is the name?'; }
+    document.getElementById('quizQ').textContent=qText;
+    document.getElementById('quizHint').textContent=hintText;
+    // 4 options
+    let opts=new Set([currentQ]);
+    while(opts.size<4){ opts.add(allIonsFlat[Math.floor(Math.random()*allIonsFlat.length)]); }
+    opts=[...opts].sort(()=>Math.random()-0.5);
+    document.getElementById('quizOpts').innerHTML=opts.map(o=>{
+      const label=mode==='name'?o.formula:o.name;
+      return `<button class="quiz-opt" onclick="answerQ('${o.formula.replace(/'/g,"\\'")}','${mode}')">${label}</button>`;
+    }).join('');
+  };
+
+  window.answerQ=function(formula, mode){
+    const correct=formula===currentQ.formula;
+    quizTotal++;
+    if(correct) quizScore++;
+    document.getElementById('quizScore').textContent=`Score: ${quizScore} / ${quizTotal}`;
+    const fb=document.getElementById('quizFb');
+    fb.textContent=correct?'✅ Correct!':'❌ Wrong — '+currentQ.name+' ('+currentQ.formula+')';
+    fb.className='quiz-feedback '+(correct?'ok':'bad');
+    document.querySelectorAll('.quiz-opt').forEach(btn=>{
+      const lbl=btn.textContent;
+      const isCorrect=mode==='name'?(lbl===currentQ.formula):(lbl===currentQ.name);
+      if(isCorrect) btn.classList.add('correct');
+      else btn.classList.add('wrong');
+      btn.disabled=true;
+    });
+    document.getElementById('nextBtn').style.display='inline-block';
+  };
+
+  // Logbook
+  function loadLogbook(){
+    fetch('/app/chem_suite/api/logbook').then(r=>r.json()).then(logs=>{
+      const el=document.getElementById('logbookList');
+      if(!logs.length){ el.innerHTML='<div style="color:var(--text-secondary);font-size:13px;padding:20px">No entries yet.</div>'; return; }
+      el.innerHTML=logs.reverse().map(l=>`
+        <div class="log-item">
+          <div class="log-item-title">
+            ${l.title||'Untitled'}
+            <button onclick="delLog('${l.id}')">🗑</button>
+          </div>
+          <div class="log-item-body">${l.body||''}</div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:6px">${l.date||''}</div>
+        </div>`).join('');
+    });
+  }
+
+  window.saveLog=function(){
+    const title=document.getElementById('logTitle').value.trim();
+    const body=document.getElementById('logBody').value.trim();
+    if(!title) return;
+    const entry={id:Date.now().toString(), title, body, date:new Date().toLocaleString()};
+    fetch('/app/chem_suite/api/logbook',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)})
+      .then(()=>{ document.getElementById('logTitle').value=''; document.getElementById('logBody').value=''; loadLogbook(); });
+  };
+
+  window.delLog=function(id){
+    fetch('/app/chem_suite/api/logbook/'+id,{method:'DELETE'}).then(()=>loadLogbook());
+  };
+})();
+</script>
+{% endblock %}

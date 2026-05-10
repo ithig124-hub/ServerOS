@@ -10,5 +10,17 @@
     \"--accent\": \"#f0f\",
     \"--glass-blur\": \"15px\",
     \"--bg-base\": \"#050005\"
+  },
+  \"Nord\": {
+    \"--glass-bg\": \"(rgba(43, 48, 59, 0.6)\",
+    \"--accent\": \"#88c043\",
+    \"--glass-blur\": \"12px\",
+    \"--bg-base\": \"#2e3440\"
+  },
+  \"Dracula\": {
+    \"--glass-bg\": \"rgba(40, 42, 54, 0.7)\",
+    \"--accent\": \"#bf93fe\",
+    \"--glass-blur\": \"8px\",
+    \"--bg-base\": \"#44475a\"
   }
 }

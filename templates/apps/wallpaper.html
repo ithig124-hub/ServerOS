@@ -18,6 +18,10 @@
 {% endblock %}
 {% block content %}
 <div class="wp-section">
+    <h3>🎭 Themes</h3>
+    <div class="wp-grid" id="themeGrid"></div>
+</div>
+<div class="wp-section">
     <h3>🌈 Gradients</h3>
     <div class="wp-grid" id="gradientGrid"></div>
 </div>
@@ -62,6 +66,19 @@
     let current = null;
     fetch('/api/wallpaper').then(r=>r.json()).then(d=>{ current=d; renderAll(); });
 
+    function renderThemes(){
+        fetch('/api/themes').then(r=>r.json()).then(themes=>{
+            const currentTheme = localStorage.getItem('serveros_theme');
+            document.getElementById('themeGrid').innerHTML = Object.keys(themes).map(name=>`
+                <div class="wp-card ${currentTheme===name?'active':''}" 
+                     style="background:${themes[name]['--bg-base']||'#000'}; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;"
+                     onclick="applyThemeName('${name}')">
+                    <div style="width:24px; height:24px; border-radius:50%; background:${themes[name]['--accent']}"></div>
+                    <div class="wp-label">${name}</div>
+                </div>`).join('');
+        });
+    }
+
     function renderAll(){
         document.getElementById('gradientGrid').innerHTML = gradients.map(g=>`
             <div class="wp-card ${current&&current.type==='gradient'&&current.value===g.value?'active':''}"
@@ -74,6 +91,7 @@
                 <div class="wp-label">${im.name}</div>
             </div>`).join('');
         if(current) updatePreview();
+        renderThemes();
     }
     function save(type, value){
         current = {type, value};
@@ -86,6 +104,22 @@
     }
     window.applyGradient = v=>save('gradient',v);
     window.applyImage = v=>save('image',v);
+    window.applyThemeName = name => {
+        if (window.parent && window.parent.setTheme) {
+            window.parent.postMessage({ type: 'serveros-theme-change', theme: name }, '*');
+        } else {
+            // Fallback for direct access
+            const root = document.documentElement;
+            fetch('/api/themes').then(r=>r.json()).then(themes=>{
+                if(themes[name]){
+                    Object.entries(themes[name]).forEach(([k,v])=>root.style.setProperty(k,v));
+                    localStorage.setItem('serveros_theme', name);
+                }
+                renderThemes();
+            });
+        }
+        setTimeout(renderThemes, 100);
+    };
     window.setCustom = ()=>{
         const url = document.getElementById('customUrl').value.trim();
         if(url) save('image', url);

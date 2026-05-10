@@ -1,8 +1,8 @@
-# 🖥️ SeverOS: The Ultimate Pi Zero 2 W Command Center
+# 🖥️ ServerOS: The Ultimate Pi Zero 2 W Command Center
 
 **A lightweight, modular, and mobile-first server dashboard designed for the Raspberry Pi Zero 2 W.**
 
-SeverOS transforms your Raspberry Pi into a powerful portable command center. Engineered to run efficiently on 512MB of RAM, it provides a high-fidelity glassmorphic interface to manage your homelab, education, and daily utilities from any device, anywhere in the world.
+ServerOS transforms your Raspberry Pi into a powerful portable command center. Engineered to run efficiently on 512MB of RAM, it provides a high-fidelity glassmorphic interface to manage your homelab, education, and daily utilities from any device, anywhere in the world.
 
 ---
 
@@ -33,8 +33,8 @@ Clone the repository and run the automated "All-in-One" installer.
 
 ```bash
 # Clone the repository
-git clone https://github.com/ithig124-hub/SeverOS.git
-cd SeverOS
+git clone https://github.com/ithig124-hub/ServerOS.git
+cd ServerOS
 
 # Make the setup script executable
 chmod +x setup.sh
@@ -47,7 +47,7 @@ sudo ./setup.sh
 
 | Mode | Address | Use Case |
 |---|---|---|
-| **Local Network** | `http://severos.local:5000` | Home Wi-Fi connection. |
+| **Local Network** | `http://serveros.local:5000` | Home Wi-Fi connection. |
 | **Hotspot Mode** | `http://10.42.0.1:5000` | Direct connection to Pi's Wi-Fi. |
 | **Remote Mode** | `http://<tailscale-ip>:5000` | Access from 5G/Global internet. |
 
@@ -62,7 +62,7 @@ sudo nmcli device wifi hotspot ssid ServerOS password SeRVEROS
 ## 📱 Built-in Application Guide
 
 ### 🧪 Chem Suite
-The crown jewel of SeverOS. Includes:
+The crown jewel of ServerOS. Includes:
 *   **Experiment Gen**: Structured school-level lab procedures.
 *   **Ions DB**: Year 10 reference for Cations and Anions with charge info.
 *   **Revision Mode**: Active recall system with scores and streaks.
@@ -90,7 +90,7 @@ Track your network health.
 ## 🛠️ System Maintenance
 
 ### **Auto-Start on Boot**
-SeverOS is configured to start automatically. You can manage the service using:
+ServerOS is configured to start automatically. You can manage the service using:
 ```bash
 sudo systemctl status severos   # Check if running
 sudo systemctl restart severos  # Restart the dashboard
@@ -103,9 +103,9 @@ Open the **Power Control** app on your dashboard and tap **"One-Click Update"**.
 3.  Prepare the system for a refresh.
 
 ### **Manual Backups**
-Your recipes, notes, and logs live in the `/data` folder. To backup:
+Your recipes, notes, and logs live in the `/data"folder. To backup:
 ```bash
-zip -r severos_backup_$(date +%F).zip data/
+zip -r serveros_backup_$(date +%F).zip data/
 ```
 
 ---
@@ -121,3 +121,49 @@ Want to add a new tool? It's simple:
 
 ## 📄 License
 MIT License. Built with ❤️ for the Raspberry Pi community by Ithiel.
+---
+
+## 🔒 Local HTTPS Setup (Recommended)
+
+Since ServerOS runs as a local dashboard, it uses plain `http` by default. If your browser is forcing `https` and causing a "Secure Connection" error, you have two options:
+
+### 1. Disable HTTPS-Only Mode
+Open your dashboard in an **Incognito/Private window**, or check your browser settings to disable "HTTPS-Only Mode" for `serveros.local`.
+
+### 2. Set up an Nginx Reverse Proxy (Advanced)
+To get a real padlock and enable secure features (like Geolocation or Camera), you can set up Nginx on your Pi:
+
+```bash
+# 1. Install Nginx
+sudo apt install nginx -y
+
+# 2. Create a self-signed certificate
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/nginx-selfsigned.key -out /etc/ssl/certs/nginx-selfsigned.crt
+
+# 3. Configure Nginx
+sudo nano /etc/nginx/sites-available/serveros
+```
+
+**Paste this config:**
+```nginx
+server {
+    listen 443 ssl;
+    server_name serveros.local;
+
+    ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+```bash
+# 4. Enable and restart
+sudo ln -s /etc/nginx/sites-available/serveros /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl restart nginx
+```
+---

@@ -1,238 +1,114 @@
 {% extends "app_base.html" %}
-{% block head %}
-<style>
-.net-container { max-width: 1000px; }
-.net-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
-.net-tab {
-    padding: 9px 18px; border-radius: 10px;
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border); font-size: 13px; font-weight: 500;
-    cursor: pointer; transition: all var(--transition-fast); color: var(--text-secondary);
-}
-.net-tab:hover { border-color: var(--glass-hover); color: var(--text-primary); }
-.net-tab.active { background: rgba(255,255,255,0.1); color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
-.net-panel { display: none; }
-.net-panel.active { display: block; animation: panelIn 0.3s cubic-bezier(.16,1,.3,1); }
-@keyframes panelIn { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
 
-/* Chat */
-.chat-container { display: flex; flex-direction: column; height: calc(100vh - 200px); max-height: 600px; }
-.chat-messages {
-    flex: 1; overflow-y: auto; padding: 16px;
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border); border-radius: var(--glass-radius) var(--glass-radius) 0 0;
-    display: flex; flex-direction: column; gap: 10px;
-}
-.chat-msg { max-width: 80%; animation: msgIn 0.3s cubic-bezier(.16,1,.3,1); }
-.chat-msg.self { align-self: flex-end; }
-@keyframes msgIn { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
-.chat-bubble {
-    padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5;
-    background: rgba(255,255,255,0.06); position: relative;
-}
-.chat-msg.self .chat-bubble { background: rgba(92,107,192,0.2); }
-.chat-sender { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: flex; gap: 8px; align-items: center; }
-.chat-device { font-size: 10px; color: var(--text-tertiary); font-weight: 400; }
-.chat-time { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; text-align: right; }
-.chat-input-bar {
-    display: flex; gap: 10px; padding: 12px 16px;
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border); border-top: none;
-    border-radius: 0 0 var(--glass-radius) var(--glass-radius);
-}
-.chat-input {
-    flex: 1; padding: 10px 14px; border-radius: 10px;
-    background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
-    color: var(--text-primary); font-size: 13px; font-family: var(--font); outline: none;
-}
-.chat-input:focus { border-color: rgba(255,255,255,0.2); }
-.chat-send-btn {
-    padding: 10px 18px; border-radius: 10px;
-    background: var(--accent); color: #fff; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: none; transition: all var(--transition-fast);
-}
-.chat-send-btn:hover { filter: brightness(1.15); }
-
-/* Scanner */
-.scan-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.scan-info {
-    padding: 8px 14px; border-radius: 8px;
-    background: rgba(255,255,255,0.04); font-size: 12px; color: var(--text-secondary);
-}
-.scan-info strong { color: var(--text-primary); }
-.device-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-.device-card {
-    padding: 16px;
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border); border-radius: var(--glass-radius);
-    box-shadow: var(--glass-shadow); transition: all var(--transition-fast);
-    animation: devIn 0.4s cubic-bezier(.16,1,.3,1) both;
-}
-.device-card:hover { border-color: var(--glass-hover); transform: translateY(-2px); }
-.device-card.offline { opacity: 0.5; }
-.device-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.device-type-icon { font-size: 22px; }
-.device-hostname { font-size: 13px; font-weight: 600; }
-.device-status-dot { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; }
-.device-status-dot.online { background: #22c55e; }
-.device-status-dot.offline { background: #ef4444; }
-.device-details { font-size: 12px; color: var(--text-secondary); }
-.device-detail { display: flex; justify-content: space-between; padding: 3px 0; }
-.device-detail-label { color: var(--text-tertiary); }
-@keyframes devIn { from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);} }
-
-/* Broadcast */
-.bcast-form {
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border); border-radius: var(--glass-radius);
-    padding: 20px; margin-bottom: 20px;
-}
-.bcast-form h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
-.bcast-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-.bcast-row input {
-    flex: 1; min-width: 200px; padding: 10px 12px; border-radius: 8px;
-    background: rgba(255,255,255,0.06); border: 1px solid var(--glass-border);
-    color: var(--text-primary); font-size: 13px; font-family: var(--font); outline: none;
-}
-.bcast-row input:focus { border-color: rgba(255,255,255,0.25); }
-.bcast-send-btn {
-    padding: 10px 20px; border-radius: 8px;
-    background: #14b8a6; color: #fff; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: none; transition: all var(--transition-fast);
-}
-.bcast-send-btn:hover { filter: brightness(1.15); }
-.bcast-list { display: flex; flex-direction: column; gap: 8px; }
-.bcast-item {
-    display: flex; align-items: center; gap: 12px; padding: 14px;
-    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border); border-radius: var(--glass-radius);
-    transition: all var(--transition-fast);
-}
-.bcast-item:hover { border-color: var(--glass-hover); }
-.bcast-icon { font-size: 24px; }
-.bcast-info { flex: 1; }
-.bcast-name { font-size: 13px; font-weight: 600; }
-.bcast-meta { font-size: 11px; color: var(--text-secondary); }
-</style>
-{% endblock %}
 {% block content %}
-<div class="net-container">
-    <div class="net-tabs">
-        <div class="net-tab active" data-tab="chat">💬 Local Chat</div>
-        <div class="net-tab" data-tab="scanner">📡 Network Scanner</div>
-        <div class="net-tab" data-tab="broadcast">📤 Broadcast File</div>
+<div class="glass-panel">
+    <div class="net-tabs" style="display: flex; gap: 10px; margin-bottom: 30px;">
+        <button onclick="showTab('chat')" class="tab-btn active" id="tab-btn-chat">💬 Chat</button>
+        <button onclick="showTab('wifi')" class="tab-btn" id="tab-btn-wifi">📶 Wi-Fi</button>
     </div>
 
-    <div class="net-panel active" id="panelChat">
-        <div class="chat-container">
-            <div class="chat-messages" id="chatMessages"></div>
-            <div class="chat-input-bar">
-                <input class="chat-input" id="chatInput" placeholder="Type a message..." autocomplete="off">
-                <button class="chat-send-btn" onclick="sendChat()">Send</button>
-            </div>
+    <div id="tab-chat" class="tab-content">
+        <div id="chatHistory" style="height: 300px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-bottom: 20px;"></div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="chatInput" placeholder="Message..." style="flex: 1;">
+            <button onclick="sendChat()">Send</button>
         </div>
     </div>
 
-    <div class="net-panel" id="panelScanner">
-        <div class="scan-header" id="scanHeader"></div>
-        <div class="device-grid" id="deviceGrid">
-            <div style="text-align:center;padding:30px;color:var(--text-tertiary)">Scanning network...</div>
+    <div id="tab-wifi" class="tab-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>Available Networks</h3>
+            <button onclick="scanWifi()">Scan</button>
         </div>
-    </div>
-
-    <div class="net-panel" id="panelBroadcast">
-        <div class="bcast-form">
-            <h3>📤 Broadcast a File</h3>
-            <div class="bcast-row">
-                <input id="bcastFilename" placeholder="File name (e.g., report.pdf)">
-                <input id="bcastUrl" placeholder="File URL or path">
-                <button class="bcast-send-btn" onclick="sendBroadcast()">Broadcast</button>
-            </div>
+        <div id="wifiList" style="display: grid; gap: 10px;">
+            <div style="color: var(--text-dim);">Scanning for networks...</div>
         </div>
-        <div class="bcast-list" id="bcastList"></div>
     </div>
 </div>
-{% endblock %}
-{% block scripts %}
+
+<style>
+    .tab-btn { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+    .tab-btn.active { background: var(--accent-primary); color: white; }
+    .wifi-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .wifi-info { display: flex; flex-direction: column; }
+    .wifi-ssid { font-weight: 700; }
+    .wifi-meta { font-size: 11px; color: var(--text-dim); }
+</style>
+
 <script>
-(function(){
-    // Tab switching
-    document.querySelectorAll('.net-tab').forEach(function(tab){
-        tab.addEventListener('click',function(){
-            document.querySelectorAll('.net-tab').forEach(t=>t.classList.remove('active'));
-            document.querySelectorAll('.net-panel').forEach(p=>p.classList.remove('active'));
-            this.classList.add('active');
-            document.getElementById('panel'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).classList.add('active');
-        });
-    });
-
-    function fmtBytes(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';if(b<1073741824)return(b/1048576).toFixed(1)+'MB';return(b/1073741824).toFixed(2)+'GB';}
-    function timeStr(ts){return new Date(ts*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
-    function timeAgo(ts){var d=Math.floor(Date.now()/1000-ts);if(d<60)return'just now';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
-    var typeIcons={router:'🌐',server:'🖥',laptop:'💻',phone:'📱',sbc:'🍇',media:'📺',printer:'🖨',iot:'🔌'};
-
-    // Chat
-    var chatSender = 'User-' + Math.floor(Math.random()*1000);
-    function loadChat(){
-        fetch('/app/network/api/chat').then(r=>r.json()).then(data=>{
-            var el=document.getElementById('chatMessages');
-            el.innerHTML=data.messages.map(m=>
-                '<div class="chat-msg'+(m.sender===chatSender?' self':'')+'">'+
-                '<div class="chat-sender">'+m.sender+'<span class="chat-device">'+m.device+'</span></div>'+
-                '<div class="chat-bubble">'+m.text+'</div>'+
-                '<div class="chat-time">'+timeStr(m.timestamp)+'</div></div>'
-            ).join('');
-            el.scrollTop=el.scrollHeight;
-        });
+    function showTab(id) {
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + id).style.display = 'block';
+        document.getElementById('tab-btn-' + id).classList.add('active');
+        if (id === 'wifi') scanWifi();
     }
 
-    window.sendChat=function(){
-        var input=document.getElementById('chatInput');
-        var text=input.value.trim();
-        if(!text)return;
-        fetch('/app/network/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text,sender:chatSender})}).then(function(){input.value='';loadChat();});
-    };
-    document.getElementById('chatInput').addEventListener('keydown',function(e){if(e.key==='Enter')window.sendChat();});
-
-    // Scanner
-    function loadScanner(){
-        fetch('/app/network/api/network/scan').then(r=>r.json()).then(data=>{
-            document.getElementById('scanHeader').innerHTML=
-                '<div class="scan-info">Subnet: <strong>'+data.subnet+'</strong></div>'+
-                '<div class="scan-info">Your IP: <strong>'+data.local_ip+'</strong></div>'+
-                '<div class="scan-info">Online: <strong>'+data.total_online+'</strong> / Offline: <strong>'+data.total_offline+'</strong></div>';
-            document.getElementById('deviceGrid').innerHTML=data.devices.map(function(d,i){
-                return '<div class="device-card'+(d.status==='offline'?' offline':'')+'" style="animation-delay:'+(i*0.05)+'s">'+
-                    '<div class="device-header"><span class="device-type-icon">'+(typeIcons[d.type]||'📡')+'</span><span class="device-hostname">'+d.hostname+'</span><span class="device-status-dot '+d.status+'"></span></div>'+
-                    '<div class="device-details"><div class="device-detail"><span class="device-detail-label">IP</span><span>'+d.ip+'</span></div>'+
-                    '<div class="device-detail"><span class="device-detail-label">MAC</span><span>'+d.mac+'</span></div>'+
-                    '<div class="device-detail"><span class="device-detail-label">Latency</span><span>'+(d.latency_ms!==null?d.latency_ms+' ms':'—')+'</span></div></div></div>';
-            }).join('');
+    async function sendChat() {
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text) return;
+        await fetch('/app/network/api/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text})
         });
+        input.value = '';
+        loadChat();
     }
 
-    // Broadcast
-    function loadBroadcasts(){
-        fetch('/app/network/api/network/broadcast').then(r=>r.json()).then(data=>{
-            var el=document.getElementById('bcastList');
-            if(!data.broadcasts.length){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-tertiary)">No broadcasts yet.</div>';return;}
-            el.innerHTML=data.broadcasts.reverse().map(b=>
-                '<div class="bcast-item"><span class="bcast-icon">📄</span><div class="bcast-info"><div class="bcast-name">'+b.filename+'</div><div class="bcast-meta">From: '+b.sender+' · '+fmtBytes(b.size_bytes)+' · '+timeAgo(b.timestamp)+'</div></div></div>'
-            ).join('');
-        });
+    async function loadChat() {
+        const res = await fetch('/app/network/api/chat');
+        const messages = await res.json();
+        const history = document.getElementById('chatHistory');
+        history.innerHTML = messages.map(m => `
+            <div style="margin-bottom: 10px;">
+                <span style="font-weight: 700; color: var(--accent-primary);">${m.sender}:</span>
+                <span>${m.text}</span>
+            </div>
+        `).join('');
+        history.scrollTop = history.scrollHeight;
     }
 
-    window.sendBroadcast=function(){
-        var fn=document.getElementById('bcastFilename').value.trim();
-        var url=document.getElementById('bcastUrl').value.trim();
-        if(!fn||!url){alert('Both filename and URL are required');return;}
-        fetch('/app/network/api/network/broadcast',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn,url:url})}).then(function(){
-            document.getElementById('bcastFilename').value='';document.getElementById('bcastUrl').value='';loadBroadcasts();
-        });
+    async function scanWifi() {
+        const list = document.getElementById('wifiList');
+        list.innerHTML = '<div style="color: var(--text-dim);">Scanning...</div>';
+        try {
+            const res = await fetch('/app/network/api/wifi/scan');
+            const networks = await res.json();
+            list.innerHTML = networks.map(n => `
+                <div class="wifi-card">
+                    <div class="wifi-info">
+                        <span class="wifi-ssid">${n.ssid || '[Hidden Network]'}</span>
+                        <span class="wifi-meta">${n.security} · Signal: ${n.signal}%</span>
+                    </div>
+                    <button onclick="connectWifi('${n.ssid}')" style="padding: 8px 16px; font-size: 12px;">Connect</button>
+                </div>
+            `).join('');
+        } catch(e) {
+            list.innerHTML = '<div style="color: #ef4444;">Failed to scan networks.</div>';
+        }
+    }
+
+    window.connectWifi = async (ssid) => {
+        const password = prompt(`Enter password for ${ssid}:`);
+        if (password === null) return;
+        
+        try {
+            const res = await fetch('/app/network/api/wifi/connect', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ssid, password})
+            });
+            const data = await res.json();
+            if (data.error) alert("Error: " + data.error);
+            else alert("Connected successfully!");
+        } catch(e) {
+            alert("Failed to connect.");
+        }
     };
 
-    loadChat(); loadScanner(); loadBroadcasts();
-    setInterval(loadChat, 5000);
-})();
+    setInterval(loadChat, 3000);
+    loadChat();
 </script>
 {% endblock %}

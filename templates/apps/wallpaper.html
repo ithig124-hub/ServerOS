@@ -1,129 +1,152 @@
 {% extends "app_base.html" %}
 {% block head %}
 <style>
-.wp-section { margin-bottom: 28px; }
-.wp-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; }
-.wp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-.wp-card { height: 130px; border-radius: 16px; cursor: pointer; position: relative; overflow: hidden; border: 2px solid transparent; transition: 0.25s; }
-.wp-card:hover { transform: translateY(-3px); border-color: var(--accent); }
-.wp-card.active { border-color: #22c55e; box-shadow: 0 0 0 2px #22c55e44; }
-.wp-label { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 12px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); font-size: 12px; font-weight: 500; }
-.wp-custom { margin-top: 16px; }
-.wp-custom input { width: 100%; padding: 10px 16px; border-radius: 12px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none; margin-bottom: 10px; }
-.wp-custom input:focus { border-color: var(--accent); }
-.wp-custom button { padding: 10px 20px; border-radius: 12px; border: none; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
-.wp-preview { margin-top: 20px; }
-.wp-preview-box { width: 100%; height: 200px; border-radius: 16px; border: 1px solid var(--glass-border); overflow: hidden; }
+.wp-section { margin-bottom: 32px; padding: 24px; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+.wp-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+.wp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.wp-card { height: 110px; border-radius: 16px; cursor: pointer; position: relative; overflow: hidden; border: 2px solid transparent; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.wp-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.2); }
+.wp-card.active { border-color: var(--accent-primary); box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+.wp-label { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); font-size: 12px; font-weight: 600; }
+
+/* Pin Apps specific */
+.pin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; }
+.pin-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; border-radius: 16px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; position: relative; }
+.pin-item:hover { background: rgba(255,255,255,0.05); }
+.pin-item.selected { background: rgba(99, 102, 241, 0.15); border-color: var(--accent-primary); }
+.pin-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: rgba(255,255,255,0.1); }
+.pin-name { font-size: 11px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.pin-badge { position: absolute; top: 5px; right: 5px; background: var(--accent-primary); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; transform: scale(0); transition: 0.2s; }
+.pin-item.selected .pin-badge { transform: scale(1); }
+
+.save-bar { position: sticky; bottom: 0; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); padding: 16px; margin: 0 -20px -40px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end; gap: 12px; z-index: 100; }
+.btn { padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+.btn-primary { background: var(--accent-primary); color: white; }
+.btn-secondary { background: rgba(255,255,255,0.1); color: white; }
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="wp-section">
-    <h3>🎭 Themes</h3>
-    <div class="wp-grid" id="themeGrid"></div>
-</div>
-<div class="wp-section">
-    <h3>🌈 Gradients</h3>
-    <div class="wp-grid" id="gradientGrid"></div>
-</div>
-<div class="wp-section">
-    <h3>🖼 Image Wallpapers</h3>
-    <div class="wp-grid" id="imageGrid"></div>
-</div>
-<div class="wp-section">
-    <h3>🔗 Custom URL</h3>
-    <div class="wp-custom">
-        <input id="customUrl" placeholder="Paste an image URL...">
-        <button onclick="setCustom()">Apply Custom Wallpaper</button>
+    <h3>📌 Home Pinned Apps (Select 6)</h3>
+    <p style="font-size: 13px; color: var(--text-dim); margin-bottom: 20px;">Choose which apps appear on your main dashboard screen.</p>
+    <div class="pin-grid" id="pinGrid">
+        <div style="padding: 20px; color: var(--text-dim);">Loading apps...</div>
     </div>
 </div>
-<div class="wp-preview">
-    <h3 style="font-size:14px;margin-bottom:10px;">Preview</h3>
-    <div class="wp-preview-box" id="wpPreview"></div>
+
+<div class="wp-section">
+    <h3>🌈 Gradients & Backgrounds</h3>
+    <div class="wp-grid" id="gradientGrid"></div>
 </div>
-{% endblock %}
-{% block scripts %}
+
+<div class="wp-section">
+    <h3>🖼 Wallpapers</h3>
+    <div class="wp-grid" id="imageGrid"></div>
+</div>
+
+<div class="save-bar">
+    <div id="pinCount" style="margin-right: auto; align-self: center; font-weight: 600; font-size: 14px; color: var(--text-dim);">0 / 6 Selected</div>
+    <button class="btn btn-secondary" onclick="location.reload()">Reset</button>
+    <button class="btn btn-primary" onclick="savePinned()">Save Configuration</button>
+</div>
+
 <script>
 (function(){
     const gradients = [
+        { name:'Midnight', value:'linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e)' },
         { name:'Deep Space', value:'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' },
         { name:'Ocean Blue', value:'linear-gradient(135deg, #0f2027, #203a43, #2c5364)' },
-        { name:'Sunset', value:'linear-gradient(135deg, #fc4a1a, #f7b733)' },
-        { name:'Purple Haze', value:'linear-gradient(135deg, #7b2ff7, #c084fc, #e879f9)' },
-        { name:'Northern Lights', value:'linear-gradient(135deg, #0b3d0b, #1a6b3c, #00d2ff)' },
-        { name:'Ember', value:'linear-gradient(135deg, #1a1a2e, #e94560, #0f3460)' },
-        { name:'Midnight', value:'linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e)' },
-        { name:'Candy', value:'linear-gradient(135deg, #ff6b6b, #ffa07a, #ffd93d, #6bcb77)' },
+        { name:'Purple Dusk', value:'linear-gradient(135deg, #2c3e50, #000000)' },
     ];
     const images = [
-        { name:'Mountains', value:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80' },
-        { name:'Stars', value:'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80' },
-        { name:'Forest', value:'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80' },
-        { name:'City Night', value:'https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1920&q=80' },
-        { name:'Aurora', value:'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1920&q=80' },
-        { name:'Beach', value:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80' },
+        { name:'Umbrel Dark', value:'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80' },
+        { name:'Abstract Flow', value:'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&q=80' },
+        { name:'Cosmic', value:'https://images.unsplash.com/photo-1464802686167-b939a6910659?w=1920&q=80' }
     ];
 
-    let current = null;
-    fetch('/api/wallpaper').then(r=>r.json()).then(d=>{ current=d; renderAll(); });
+    let currentWP = null;
+    let allApps = [];
+    let selectedAppIds = [];
 
-    function renderThemes(){
-        fetch('/api/themes').then(r=>r.json()).then(themes=>{
-            const currentTheme = localStorage.getItem('serveros_theme');
-            document.getElementById('themeGrid').innerHTML = Object.keys(themes).map(name=>`
-                <div class="wp-card ${currentTheme===name?'active':''}" 
-                     style="background:${themes[name]['--bg-base']||'#000'}; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;"
-                     onclick="applyThemeName('${name}')">
-                    <div style="width:24px; height:24px; border-radius:50%; background:${themes[name]['--accent']}"></div>
-                    <div class="wp-label">${name}</div>
-                </div>`).join('');
-        });
+    async function init() {
+        const [wpRes, appsRes, pinnedRes] = await Promise.all([
+            fetch('/api/wallpaper'),
+            fetch('/api/apps'),
+            fetch('/app/wallpaper/api/pinned')
+        ]);
+        
+        currentWP = await wpRes.json();
+        allApps = await appsRes.json();
+        selectedAppIds = await pinnedRes.json();
+
+        renderApps();
+        renderWallpapers();
     }
 
-    function renderAll(){
-        document.getElementById('gradientGrid').innerHTML = gradients.map(g=>`
-            <div class="wp-card ${current&&current.type==='gradient'&&current.value===g.value?'active':''}"
-                 style="background:${g.value}" onclick="applyGradient(\`${g.value}\`)">
+    function renderApps() {
+        const grid = document.getElementById('pinGrid');
+        grid.innerHTML = allApps.map(app => {
+            const isSelected = selectedAppIds.includes(app.id);
+            const index = selectedAppIds.indexOf(app.id) + 1;
+            return `
+                <div class="pin-item ${isSelected ? 'selected' : ''}" onclick="togglePin('${app.id}')">
+                    <div class="pin-badge">${index}</div>
+                    <div class="pin-icon" style="background: ${app.color}22; color: ${app.color}">${app.icon}</div>
+                    <div class="pin-name">${app.name}</div>
+                </div>`;
+        }).join('');
+        document.getElementById('pinCount').innerText = `${selectedAppIds.length} / 6 Selected`;
+    }
+
+    window.togglePin = (id) => {
+        const idx = selectedAppIds.indexOf(id);
+        if (idx > -1) {
+            selectedAppIds.splice(idx, 1);
+        } else {
+            if (selectedAppIds.length >= 6) {
+                alert("Maximum 6 apps can be pinned to home.");
+                return;
+            }
+            selectedAppIds.push(id);
+        }
+        renderApps();
+    };
+
+    function renderWallpapers() {
+        document.getElementById('gradientGrid').innerHTML = gradients.map(g => `
+            <div class="wp-card ${currentWP.type==='gradient' && currentWP.value===g.value ? 'active' : ''}" 
+                 style="background:${g.value}" onclick="saveWP('gradient', '${g.value}')">
                 <div class="wp-label">${g.name}</div>
             </div>`).join('');
-        document.getElementById('imageGrid').innerHTML = images.map(im=>`
-            <div class="wp-card ${current&&current.type==='image'&&current.value===im.value?'active':''}"
-                 style="background:url('${im.value}') center/cover" onclick="applyImage('${im.value}')">
-                <div class="wp-label">${im.name}</div>
+        
+        document.getElementById('imageGrid').innerHTML = images.map(i => `
+            <div class="wp-card ${currentWP.type==='image' && currentWP.value===i.value ? 'active' : ''}" 
+                 style="background:url('${i.value}') center/cover" onclick="saveWP('image', '${i.value}')">
+                <div class="wp-label">${i.name}</div>
             </div>`).join('');
-        if(current) updatePreview();
-        renderThemes();
     }
-    function save(type, value){
-        current = {type, value};
-        fetch('/api/wallpaper',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(current)}).then(()=>renderAll());
-    }
-    function updatePreview(){
-        const box = document.getElementById('wpPreview');
-        if(current.type==='image') box.style.background=`url('${current.value}') center/cover`;
-        else box.style.background=current.value;
-    }
-    window.applyGradient = v=>save('gradient',v);
-    window.applyImage = v=>save('image',v);
-    window.applyThemeName = name => {
-        if (window.parent && window.parent.setTheme) {
-            window.parent.postMessage({ type: 'serveros-theme-change', theme: name }, '*');
-        } else {
-            // Fallback for direct access
-            const root = document.documentElement;
-            fetch('/api/themes').then(r=>r.json()).then(themes=>{
-                if(themes[name]){
-                    Object.entries(themes[name]).forEach(([k,v])=>root.style.setProperty(k,v));
-                    localStorage.setItem('serveros_theme', name);
-                }
-                renderThemes();
-            });
-        }
-        setTimeout(renderThemes, 100);
+
+    window.saveWP = async (type, value) => {
+        currentWP = {type, value};
+        await fetch('/api/wallpaper', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(currentWP)
+        });
+        renderWallpapers();
     };
-    window.setCustom = ()=>{
-        const url = document.getElementById('customUrl').value.trim();
-        if(url) save('image', url);
+
+    window.savePinned = async () => {
+        const res = await fetch('/app/wallpaper/api/pinned', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(selectedAppIds)
+        });
+        if (res.ok) alert("Home screen configuration saved!");
     };
+
+    init();
 })();
 </script>
 {% endblock %}

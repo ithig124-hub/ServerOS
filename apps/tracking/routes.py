@@ -2,6 +2,7 @@ import os, json
 from flask import Blueprint, request, jsonify
 
 def register(app, app_id):
+    bp = Blueprint(app_id, __name__)
     DATA_FILE = os.path.join('data', 'location.json')
 
     @bp.route('/api/tracking/update', methods=['POST'])
@@ -18,3 +19,5 @@ def register(app, app_id):
             return jsonify({"error": "No data recorded"})
         with open(DATA_FILE, 'r') as f:
             return jsonify(json.load(f))
+    
+    app.register_blueprint(bp, url_prefix=f'/app/{app_id}')

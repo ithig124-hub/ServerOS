@@ -1,0 +1,8 @@
+{
+    "id": "settings",
+    "name": "Settings",
+    "icon": "⚙️",
+    "description": "Configure ServerOS and update system",
+    "category": "system",
+    "color": "#94a3b8"
+}
